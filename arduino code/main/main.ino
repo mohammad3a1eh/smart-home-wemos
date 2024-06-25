@@ -116,6 +116,9 @@ void route_read() {
   isHigh = digitalRead(fan) == HIGH;
   ports["pin_FAN"] = isHigh ? "High" : "Low";
 
+  ports["temp"] = get_temp();
+  ports["rgb"] = redvalue, greenvalue, bluevalue;
+
   String jsonStatus;
   serializeJson(ports, jsonStatus);
   server.send(200, "application/json", jsonStatus);
