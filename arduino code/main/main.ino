@@ -117,7 +117,9 @@ void route_read() {
   ports["pin_FAN"] = isHigh ? "High" : "Low";
 
   ports["temp"] = get_temp();
-  ports["rgb"] = redvalue, greenvalue, bluevalue;
+  ports["red"] = redvalue;
+  ports["green"] = greenvalue;
+  ports["blue"] = bluevalue;
 
   String jsonStatus;
   serializeJson(ports, jsonStatus);
