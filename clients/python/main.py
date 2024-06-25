@@ -1,5 +1,9 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+import sys
 
+
+
+        
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -158,3 +162,25 @@ class Ui_MainWindow(object):
         self.preview_color.setText("preview")
         self.temp_box.setTitle("temperature")
         self.temp.setText("0℃")
+
+
+    def open_color_dialog(self):
+            color = QtWidgets.QColorDialog.getColor()
+            # print(color.name())
+            print(color.getRgb())
+            
+            if color.isValid():
+                self.preview_color.setStyleSheet(f"background-color: {color.name()};")
+
+class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+    def __init__(self):
+        super(MainWindow, self).__init__()
+        self.setupUi(self)
+        self.select_color.clicked.connect(self.open_color_dialog)
+        
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    mainWindow = MainWindow()
+    mainWindow.show()
+    sys.exit(app.exec_())
