@@ -1,9 +1,10 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
+import requests
+import threading
+import json
 
-
-
-        
+last_pos = None        
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -150,7 +151,7 @@ class Ui_MainWindow(object):
         self.webpanel.setText("Open web-panel")
         self.log_box.setTitle("Log")
         self.log.setPlainText("{\n"
-"    \"channel\": \"asd\"\n"
+"    \"channel\": \"test\"\n"
 "}")
         self.tip_box.setTitle("Tips")
         self.tips.setText("Connect to the board and enter the iPanel.\n"
@@ -171,12 +172,52 @@ class Ui_MainWindow(object):
             
             if color.isValid():
                 self.preview_color.setStyleSheet(f"background-color: {color.name()};")
+                
+    def updateTimer(self):
+        try:
+            if self.auto_refresh.isChecked():
+                delay_value = int(self.delay.text()) * 1000
+                self.timer.timeout.connect(self.runPingThread)
+                self.timer.start(delay_value)
+            else:
+                self.timer.stop()
+        except ValueError:
+            self.timer.stop()
+            
+    def runPingThread(self):
+        threading.Thread(target=self.ping).start()
+            
+    def ping(self):
+        url = f"http://{self.ip.text()}/read"
+        icon = QtGui.QIcon()  
+        try:
+            response = requests.get(url)
+            
+        
+            if response.status_code == 200:
+                icon.addPixmap(QtGui.QPixmap(".\\assets/ok.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                log = str(json.dumps(response.json(), sort_keys=True, indent=2, separators=(',', ': ')))
+
+            else:
+                icon.addPixmap(QtGui.QPixmap(".\\assets/nok.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                log = str(response.status_code)
+        except Exception as e:
+            icon.addPixmap(QtGui.QPixmap(".\\assets/nok.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+            log = str(e)
+        
+        QtCore.QMetaObject.invokeMethod(self.log, "setPlainText", QtCore.Qt.QueuedConnection, QtCore.Q_ARG(str, log))
+        self.status_icon.setIcon(icon)
+
+        
+        
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.setupUi(self)
+        self.timer = QtCore.QTimer(self)
         self.select_color.clicked.connect(self.open_color_dialog)
+        self.auto_refresh.stateChanged.connect(self.updateTimer)
         
 
 if __name__ == "__main__":
