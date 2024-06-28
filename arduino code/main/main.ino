@@ -26,9 +26,9 @@ unsigned long previousMillis = 0; //variable to save time
 
 
 // Set Color Default value for color channels
-int redvalue = 255;
-int greenvalue = 255;
-int bluevalue = 255;
+int redValue = 255;
+int greenValue = 255;
+int blueValue = 255;
 
 ESP8266WebServer server(80); //Create a server object
 
@@ -117,9 +117,9 @@ void route_read() {
   ports["pin_FAN"] = isHigh ? "High" : "Low";
 
   ports["temp"] = get_temp();
-  ports["red"] = redvalue;
-  ports["green"] = greenvalue;
-  ports["blue"] = bluevalue;
+  ports["red"] = redValue;
+  ports["green"] = greenValue;
+  ports["blue"] = blueValue;
 
   String jsonStatus;
   serializeJson(ports, jsonStatus);
@@ -132,9 +132,9 @@ void route_rgb_post() {
   String green = server.arg("green");
   String blue = server.arg("blue");
 
-  int redValue = red.toInt();
-  int greenValue = green.toInt();
-  int blueValue = blue.toInt();
+  redValue = red.toInt();
+  greenValue = green.toInt();
+  blueValue = blue.toInt();
 
   analogWrite(redpin, redValue);
   analogWrite(greenpin, greenValue);
