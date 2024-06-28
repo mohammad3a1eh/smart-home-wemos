@@ -3,8 +3,13 @@ import sys
 import requests
 import threading
 import json
+import webbrowser
 
-last_pos = None        
+red = None
+green = None
+blue = None
+alpha = None
+        
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -150,9 +155,7 @@ class Ui_MainWindow(object):
         self.refresh.setText("Manual refresh")
         self.webpanel.setText("Open web-panel")
         self.log_box.setTitle("Log")
-        self.log.setPlainText("{\n"
-"    \"channel\": \"test\"\n"
-"}")
+        self.log.setPlainText("")
         self.tip_box.setTitle("Tips")
         self.tips.setText("Connect to the board and enter the iPanel.\n"
 "In the next section, you can turn on the automatic update or update manually.\n"
@@ -166,12 +169,15 @@ class Ui_MainWindow(object):
 
 
     def open_color_dialog(self):
-            color = QtWidgets.QColorDialog.getColor()
-            # print(color.name())
-            print(color.getRgb())
+        global red, green, blue, alpha
+        color = QtWidgets.QColorDialog.getColor()
+        # print(color.name())
+        print(color.getRgb())
             
-            if color.isValid():
-                self.preview_color.setStyleSheet(f"background-color: {color.name()};")
+        red, green, blue, alpha = color.getRgb()        
+            
+        # if color.isValid():
+        #     self.preview_color.setStyleSheet(f"background-color: {color.name()};")
                 
     def updateTimer(self):
         try:
@@ -191,13 +197,25 @@ class Ui_MainWindow(object):
         url = f"http://{self.ip.text()}/read"
         icon = QtGui.QIcon()  
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=2)
             
         
             if response.status_code == 200:
                 icon.addPixmap(QtGui.QPixmap(".\\assets/ok.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
                 log = str(json.dumps(response.json(), sort_keys=True, indent=2, separators=(',', ': ')))
-
+                
+                pins = ["pin_1", "pin_2", "pin_3", "pin_4"]
+                keys = [self.channel_1, self.channel_2, self.channel_3, self.channel_4]
+                
+                for i in pins:
+                    if response.json()[i] == "Low":
+                        keys[pins.index(i)].setChecked(False)
+                    else:
+                        keys[pins.index(i)].setChecked(True)
+                        
+                self.temp.setText("{:.2f}".format(response.json()['temp'])+"℃")
+                self.preview_color.setStyleSheet(f"background-color: rgb({response.json()['red']},{response.json()['green']},{response.json()['blue']});")
+                        
             else:
                 icon.addPixmap(QtGui.QPixmap(".\\assets/nok.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
                 log = str(response.status_code)
@@ -207,7 +225,41 @@ class Ui_MainWindow(object):
         
         QtCore.QMetaObject.invokeMethod(self.log, "setPlainText", QtCore.Qt.QueuedConnection, QtCore.Q_ARG(str, log))
         self.status_icon.setIcon(icon)
+        
+    def openpanel(self):
+        if self.ip.text() != "":
+            webbrowser.open(f"http://{self.ip.text()}", new=0, autoraise=True)
 
+    def keyaction(self, pin):
+        url = f"http://{self.ip.text()}/light"
+        d = {"baseNumber": pin}
+        
+        try:
+            response = requests.post(url, timeout=2, data=d)
+        except:
+            pass
+        
+    def rgbaction(self, red, green, blue):
+        url = f"http://{self.ip.text()}/rgb"
+        d = {
+            "red" : red,
+            "green" : green,
+            "blue" : blue
+            }
+        
+        try:
+            response = requests.post(url, timeout=2, data=d)
+        except:
+            pass
+        
+    def changecolor(self):
+        global red, green, blue
+        print(red, green, blue)
+        self.rgbaction(red, green, blue)
+        
+        
+        
+        
         
         
 
@@ -218,6 +270,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.timer = QtCore.QTimer(self)
         self.select_color.clicked.connect(self.open_color_dialog)
         self.auto_refresh.stateChanged.connect(self.updateTimer)
+        self.refresh.clicked.connect(self.runPingThread)
+        self.webpanel.clicked.connect(self.openpanel)
+        self.set_color.clicked.connect(self.changecolor)
+        self.channel_1.clicked.connect(lambda: self.keyaction(1))
+        self.channel_2.clicked.connect(lambda: self.keyaction(2))
+        self.channel_3.clicked.connect(lambda: self.keyaction(3))
+        self.channel_4.clicked.connect(lambda: self.keyaction(4))
         
 
 if __name__ == "__main__":
